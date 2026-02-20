@@ -3,16 +3,42 @@ from cxb_unlimited.game import Coordinate as C
 from cxb_unlimited.game import Game
 from cxb_unlimited.game import Tile
 
+TILES = ["""
+ #
+#B
+ #
+         """,
+         """
+#
+#
+#
+B#
+         """,
+         """
+#B#
+  #
+         """,
+         """
+ #
+B#
+ #B
+         """
+        ]
+TILE_POSITIONS = [
+        C(3, 2),
+        C(0, 2),
+        C(2, 0),
+        C(0, 0)
+        ]
+
 def main() -> None:
-    tiles = [
-            # Standard tetronimo tile
-            Tile(solid=[C(0, 0), C(2, 0), C(1, 1)],
-                 boxes=[C(1,0)],
-                 position=C(0, 3)
-                 ),
-            ]
+    tiles = [Tile.from_ascii(t, position=p) for t, p in zip(TILES, TILE_POSITIONS)]
     cats = Cats([
-            C(3, 0)
+            C(0,0),
+            C(2,1),
+            C(3,1),
+            C(1,3),
+            C(2,4)
             ])
     game = Game(tiles=tiles, cats=cats)
     game.board.print()

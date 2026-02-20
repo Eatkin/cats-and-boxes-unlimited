@@ -1,21 +1,45 @@
+import re
 from dataclasses import dataclass
 from dataclasses import field
 from typing import List
 from typing import Optional
 from typing import Tuple
 
+WHITESPACE = re.compile(r'\s+')
+
 @dataclass
 class Coordinate:
     x: int
     y: int
 
-@dataclass
 class Tile:
     """Holds lists of relative coordinates"""
-    solid: List[Coordinate]
-    boxes: List[Coordinate]
-    position: Coordinate = field(default_factory=lambda: Coordinate(0, 0))
-    rotation: int = 0
+    def __init__(self, solid: List[Coordinate], boxes: List[Coordinate], rotation: int = 0, position: Optional[Coordinate]=None) -> None:
+        self.solid = solid
+        self.boxes = boxes
+        self.rotation = rotation
+        self.position = position if position is not None else Coordinate(0,0)
+
+    @classmethod
+    def from_ascii(cls, ascii_representation: str, **kwargs):
+        solid = []
+        boxes = []
+        leading_lines = 0
+        ascii_lines = ascii_representation.split("\n")
+        for y, line in enumerate(ascii_lines):
+            # Ignore any blank lines - allows easier formatting
+            if WHITESPACE.fullmatch(line) or len(line) == 0:
+                leading_lines += 1
+                continue
+            # Adjust y to remove leading lines
+            yy = y - leading_lines
+            for x, ch in enumerate(line):
+                if ch == "#":
+                    solid.append(Coordinate(x,yy))
+                elif ch == "B":
+                    boxes.append(Coordinate(x,yy))
+
+        return cls(solid=solid, boxes=boxes, **kwargs)
 
 @dataclass(frozen=True)
 class Cats:
