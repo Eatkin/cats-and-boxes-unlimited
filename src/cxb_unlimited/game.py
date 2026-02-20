@@ -73,22 +73,22 @@ class Board:
                 shift = p.x + coord.x + (p.y + coord.y) * self.size.width
                 self.box_bitmask |= (1 << shift)
 
-    def at_pos(self, x: int, y: int, bitmask: int):
-        shift = x + y * self.size.width
-        return bitmask & (1<<shift)
-
     def print(self) -> None:
         """ASCII visualisation of the board"""
         for y in range(self.size.height):
             for x in range(self.size.width):
-                if self.at_pos(x, y, self.solid_bitmask):
+                idx = x + y * self.size.width
+                bit = (1 << idx)
+                solid = self.solid_bitmask & bit
+                box = self.box_bitmask & bit
+                cat = self.cat_bitmask & bit
+                if solid:
                     print("#", end="")
-                elif self.at_pos(x, y, self.box_bitmask):
-                    if self.at_pos(x, y, self.cat_bitmask):
-                        print('O', end="")
-                    else:
-                        print('B', end="")
-                elif self.at_pos(x, y, self.cat_bitmask):
+                elif box and cat:
+                    print('O', end="")
+                elif box:
+                    print('B', end="")
+                elif cat:
                     print('C', end="")
                 else:
                     print(".", end="")
