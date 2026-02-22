@@ -4,9 +4,10 @@ import re
 from dataclasses import dataclass
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Tuple
 
-from cxb_unlimited.board import BoardSize
+from cxb_unlimited.common import BoardSize
 from cxb_unlimited.common import Coordinate
 from cxb_unlimited.exceptions import OutOfBoundsError
 
@@ -17,6 +18,7 @@ WHITESPACE = re.compile(r"\s+")
 class TileOrientation:
     """Single, immutable orientation of a tile"""
 
+    tile: Tile
     solid: frozenset[Coordinate]
     boxes: frozenset[Coordinate]
     width: int
@@ -26,6 +28,7 @@ class TileOrientation:
 
     @staticmethod
     def from_coords(
+        tile: Tile,
         solid: Iterable[Coordinate],
         boxes: Iterable[Coordinate],
     ) -> TileOrientation:
@@ -52,6 +55,7 @@ class TileOrientation:
             box_mask |= 1 << bit
 
         return TileOrientation(
+            tile=tile,
             solid=solid,
             boxes=boxes,
             width=width,
@@ -63,6 +67,10 @@ class TileOrientation:
 
 @dataclass(frozen=True)
 class TilePlacement:
+    """Represents a tile placed on a board
+    Ensures bounds are not exceeded"""
+
+    tile: Tile
     orientation: TileOrientation
     position: Coordinate
     board_size: BoardSize
@@ -76,25 +84,31 @@ class TilePlacement:
 
         if px + self.orientation.width > self.board_size.width:
             raise OutOfBoundsError(
-                f"Tile placement exceeds board width {self.board_size.width}"
+                f"Tile placement exceeds board width {self.board_size.width} - x coordinate is {px} and tile width is {self.orientation.width}"
             )
 
         if py + self.orientation.height > self.board_size.height:
             raise OutOfBoundsError(
-                f"Tile placement exceeds board height {self.board_size.height}"
+                f"Tile placement exceeds board height {self.board_size.height} - y coordinate is {py} and tile height is {self.orientation.height}"
             )
 
     @property
     def solid_mask(self) -> int:
-        return self._shift_mask(self.orientation.solid_mask)
+        return self._to_board_mask(self.orientation.solid)
 
     @property
     def box_mask(self) -> int:
-        return self._shift_mask(self.orientation.box_mask)
+        return self._to_board_mask(self.orientation.boxes)
 
-    def _shift_mask(self, mask: int) -> int:
-        shift = self.position.y * self.board_size.width + self.position.x
-        return mask << shift
+    def _to_board_mask(self, coords: frozenset[Coordinate]) -> int:
+        """Convert orientation coordinates to a bitmask on the board."""
+        mask = 0
+        for c in coords:
+            idx = (self.position.y + c.y) * self.board_size.width + (
+                self.position.x + c.x
+            )
+            mask |= 1 << idx
+        return mask
 
 
 class Tile:
@@ -161,7 +175,7 @@ class Tile:
 
             if key not in seen:
                 seen.add(key)
-                orientations.append(TileOrientation.from_coords(solid, boxes))
+                orientations.append(TileOrientation.from_coords(self, solid, boxes))
 
             solid, boxes = self._rotate_90(solid, boxes)  # type: ignore
 
@@ -207,3 +221,35 @@ class Tile:
     def default_orientation(self) -> TileOrientation:
         """Returns a TileOrientation object in the initially defined state"""
         return self.orientations[0]
+
+    def print_orientation(self, orientation: Optional[TileOrientation] = None) -> None:
+        """
+        Prints an ASCII representation of a tile orientation.
+        '#' = solid, 'B' = box, '.' = empty.
+        If no orientation is given, prints the default_orientation.
+        """
+        if orientation is None:
+            orientation = self.default_orientation
+
+        width = orientation.width
+        height = orientation.height
+        solid_coords = orientation.solid
+        box_coords = orientation.boxes
+
+        # Build grid row by row
+        for y in range(height):
+            row = []
+            for x in range(width):
+                coord = Coordinate(x, y)
+                if coord in solid_coords:
+                    row.append("#")
+                elif coord in box_coords:
+                    row.append("B")
+                else:
+                    row.append(".")
+            print("".join(row))
+
+    def print_all_orientations(self) -> None:
+        for i, orient in enumerate(self.orientations):
+            print(f"Orientation {i}:")
+            self.print_orientation(orient)
