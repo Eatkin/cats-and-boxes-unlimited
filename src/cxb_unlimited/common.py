@@ -17,13 +17,11 @@ class BoardSize:
 
 @dataclass(frozen=True)
 class Move:
-    """Placeholder before we implement movement
-    Expected structure:
-    Pos src
-    Rot src
-    Pos dest
-    Rot dest
-    So we can apply rotation and positioning
+    """Representation of a move that can be undone
+    Record by indices
     """
-
-    pass
+    tile_idx: int
+    orientation_idx_src: int
+    orientation_idx_dest: int
+    pos_src: Coordinate
+    pos_dest: Coordinate

@@ -25,12 +25,14 @@ class TileOrientation:
     height: int
     solid_mask: int
     box_mask: int
+    idx: int
 
     @staticmethod
     def from_coords(
         tile: Tile,
         solid: Iterable[Coordinate],
         boxes: Iterable[Coordinate],
+        idx: int
     ) -> TileOrientation:
         solid = frozenset(solid)
         boxes = frozenset(boxes)
@@ -62,6 +64,7 @@ class TileOrientation:
             height=height,
             solid_mask=solid_mask,
             box_mask=box_mask,
+            idx=idx
         )
 
 
@@ -164,6 +167,8 @@ class Tile:
         solid = self._base_solid
         boxes = self._base_boxes
 
+        orientation_index = 0
+
         for _ in range(4):
 
             solid, boxes = self._normalize(solid, boxes)  # type: ignore
@@ -175,7 +180,8 @@ class Tile:
 
             if key not in seen:
                 seen.add(key)
-                orientations.append(TileOrientation.from_coords(self, solid, boxes))
+                orientations.append(TileOrientation.from_coords(self, solid, boxes, idx=orientation_index))
+                orientation_index += 1
 
             solid, boxes = self._rotate_90(solid, boxes)  # type: ignore
 

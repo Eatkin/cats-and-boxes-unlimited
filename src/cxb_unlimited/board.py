@@ -41,6 +41,16 @@ class Board:
         self.box_bitmask = 0
         self.cat_bitmask = cats.to_bitmask(self.size.width)
 
+    @property
+    def solved(self) -> bool:
+        return (self.cat_bitmask & self.box_bitmask) == self.cat_bitmask
+
+    def set_tiles(self, tile_placements: List[TilePlacement]) -> None:
+        """Places tiles and calculates bitmasks
+        This does not validate, you will need to do that with a call to .validate()"""
+        self.tiles = tile_placements
+        self.calculate_bitmasks()
+
     def validate(self) -> bool:
         """Validates the board setup
         No overlapping tiles, no tiles over cats, no tiles out of bounds"""
@@ -54,6 +64,10 @@ class Board:
 
             # solid overlapping box
             if combined_box & placement.solid_mask:
+                return False
+
+            # box overlapping solid
+            if placement.box_mask & combined_solid:
                 return False
 
             # overlap with other boxes
@@ -79,6 +93,7 @@ class Board:
 
     def print(self) -> None:
         """ASCII visualisation of the board"""
+        self.calculate_bitmasks()
 
         width = self.size.width
         height = self.size.height
